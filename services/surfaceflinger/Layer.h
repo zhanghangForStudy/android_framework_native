@@ -65,9 +65,12 @@ class SurfaceFlinger;
 /*
  * A new BufferQueue and a new SurfaceFlingerConsumer are created when the
  * Layer is first referenced.
- *
  * This also implements onFrameAvailable(), which notifies SurfaceFlinger
  * that new data has arrived.
+ *　当Layer对象第一个被引用的时候，
+ *  一个新的BufferQueue和一个新的SurfaceFlingerConsumer被创建.
+ *　此类也实现了onFrameAvailable方法，当新数据被提交了，则会通过
+ * 此方法通知SurfaceFlinger
  */
 class Layer : public SurfaceFlingerConsumer::ContentsChangedListener {
     static int32_t sSequence;
@@ -83,6 +86,7 @@ public:
     // Layer serial number.  This gives layers an explicit ordering, so we
     // have a stable sort order when their layer stack and Z-order are
     // the same.
+    // 绘制层序列号。此属性指定了绘制层一个明确的排序，所以我们有一个稳定的排序序列
     int32_t sequence;
 
     enum { // flags for doTransaction()
@@ -146,9 +150,11 @@ public:
     virtual ~Layer();
 
     // the this layer's size and format
+    //　设置此绘制层的大小与格式
     status_t setBuffers(uint32_t w, uint32_t h, PixelFormat format, uint32_t flags);
 
     // modify current state
+    //　修改当前的状态
     bool setPosition(float x, float y, bool immediate);
     bool setLayer(uint32_t z);
     bool setSize(uint32_t w, uint32_t h);
@@ -169,12 +175,15 @@ public:
     // If we have received a new buffer this frame, we will pass its surface
     // damage down to hardware composer. Otherwise, we must send a region with
     // one empty rect.
+    //　如果我们接收到一个新的帧缓冲，我们则将它surface对象传递给硬件消耗者。
+    // 否者，我们必须传递一个具有一个空矩形的区域
     void useSurfaceDamage();
     void useEmptyDamage();
 
     uint32_t getTransactionFlags(uint32_t flags);
     uint32_t setTransactionFlags(uint32_t flags);
 
+　　// 计算几何结构？
     void computeGeometry(const sp<const DisplayDevice>& hw, Mesh& mesh,
             bool useIdentityTransform) const;
     Rect computeBounds(const Region& activeTransparentRegion) const;
@@ -198,12 +207,17 @@ public:
      * This takes into account the buffer format (i.e. whether or not the
      * pixel format includes an alpha channel) and the "opaque" flag set
      * on the layer.  It does not examine the current plane alpha value.
+     * 是否不透明，如果为true，则表示此surface是不透明的。
+     * 这个方法，关注缓冲区的格式(例如，像素格式是否包含了一个透明区域)，
+     * 以及设置在此绘制层上的不透明标识。
+     * 此方法并不会检测当前面板上的透明度
      */
     virtual bool isOpaque(const Layer::State& s) const;
 
     /*
      * isSecure - true if this surface is secure, that is if it prevents
      * screenshots or VNC servers.
+     *　如果是安全的绘制层，则会被避免截屏或者进行VNC服务
      */
     virtual bool isSecure() const;
 
@@ -220,6 +234,7 @@ public:
 
     /*
      * isFixedSize - true if content has a fixed size
+     * 绘制层的内容是否有一个固定的值
      */
     virtual bool isFixedSize() const;
 
@@ -274,12 +289,14 @@ public:
     /*
      * called before composition.
      * returns true if the layer has pending updates.
+     * 再合成前调用，如果此绘制层在此方法中发生了改变，则返回true
      */
     bool onPreComposition();
 
     /*
      * called after composition.
      * returns true if the layer latched a new buffer this frame.
+     *　在合成之后调用.如果绘制层锁住了一个新的缓冲区，则此值返回true
      */
     bool onPostComposition();
 
@@ -291,6 +308,7 @@ public:
     /*
      * draw - performs some global clipping optimizations
      * and calls onDraw().
+     *　执行一些全局的剪切优化，并调用onDraw()方法
      */
     void draw(const sp<const DisplayDevice>& hw, const Region& clip) const;
     void draw(const sp<const DisplayDevice>& hw, bool useIdentityTransform) const;
@@ -299,12 +317,14 @@ public:
     /*
      * doTransaction - process the transaction. This is a good place to figure
      * out which attributes of the surface have changed.
+     *　执行事务。这是一个好地方，用来于指出surface的哪些属性发生了改变。
      */
     uint32_t doTransaction(uint32_t transactionFlags);
 
     /*
      * setVisibleRegion - called to set the new visible region. This gives
      * a chance to update the new visible region or record the fact it changed.
+     * 设置可视区域
      */
     void setVisibleRegion(const Region& visibleRegion);
 
@@ -312,12 +332,14 @@ public:
      * setCoveredRegion - called when the covered region changes. The covered
      * region corresponds to any area of the surface that is covered
      * (transparently or not) by another surface.
+     * 设置被此绘制层覆盖的区域？
      */
     void setCoveredRegion(const Region& coveredRegion);
 
     /*
      * setVisibleNonTransparentRegion - called when the visible and
      * non-transparent region changes.
+     * 设置可视的、不透明的区域
      */
     void setVisibleNonTransparentRegion(const Region&
             visibleNonTransparentRegion);
@@ -327,6 +349,9 @@ public:
      * the visible regions need to be recomputed (this is a fairly heavy
      * operation, so this should be set only if needed). Typically this is used
      * to figure out if the content or size of a surface has changed.
+     * 屏幕每次绘制以及每次返回是否需要重新计算可视区域的时候，此方法被调用。
+     * (这是一个相当重的操作，所以只有当需要的时候才应该被设置。)
+     *　典型地，此方法被用来指出surface的内容是否发生了改变
      */
     Region latchBuffer(bool& recomputeVisibleRegions);
 
@@ -335,6 +360,7 @@ public:
     /*
      * called with the state lock when the surface is removed from the
      * current list
+     * 当此绘制层从当前的列表之中移除，则通过状态锁来调用此方法
      */
     void onRemoved();
 
@@ -433,6 +459,7 @@ protected:
     /*
      * Trivial class, used to ensure that mFlinger->onLayerDestroyed(mLayer)
      * is called.
+     * 不重要的类，被用来确保mFlinger->onLayerDestroyed(mLayer)方法被调用了
      */
     class LayerCleaner {
         sp<SurfaceFlinger> mFlinger;
@@ -453,6 +480,7 @@ private:
     void commitTransaction(const State& stateToCommit);
 
     // needsLinearFiltering - true if this surface's state requires filtering
+    // 如果此绘制层的状态需要拦截，则返回true
     bool needsFiltering(const sp<const DisplayDevice>& hw) const;
 
     uint32_t getEffectiveUsage(uint32_t usage) const;
@@ -509,17 +537,21 @@ private:
     // SyncPoints which will be signaled when the correct frame is at the head
     // of the queue and dropped after the frame has been latched. Protected by
     // mLocalSyncPointMutex.
+    // 当正确的帧位于队列的头部时，将被唤醒的同步点。
+　　// 被mLocalSyncPointMutex保护
     Mutex mLocalSyncPointMutex;
     std::list<std::shared_ptr<SyncPoint>> mLocalSyncPoints;
 
     // SyncPoints which will be signaled and then dropped when the transaction
     // is applied
+    // 当事务被实施后，需要被唤醒的同步点，在唤醒后，会将这些同步点丢弃
     std::list<std::shared_ptr<SyncPoint>> mRemoteSyncPoints;
 
     uint64_t getHeadFrameNumber() const;
     bool headFenceHasSignaled() const;
 
     // Returns false if the relevant frame has already been latched
+    // 如果相关的帧已经被
     bool addSyncPoint(const std::shared_ptr<SyncPoint>& point);
 
     void pushPendingState();
