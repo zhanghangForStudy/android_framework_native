@@ -169,6 +169,7 @@ private:
 
     // If we're wrapping another buffer then this reference will make sure it
     // doesn't get freed.
+    // 如果我们包装了另一个缓冲区，则此引用将确保此缓冲区不会被释放
     sp<ANativeWindowBuffer> mWrappedBuffer;
 
     uint64_t mId;
@@ -176,6 +177,8 @@ private:
     // Stores the generation number of this buffer. If this number does not
     // match the BufferQueue's internal generation number (set through
     // IGBP::setGenerationNumber), attempts to attach the buffer will fail.
+    // 保存此缓冲区的生成码。如果这个生成码并不匹配BufferQueue的内部生成码，
+    // 则试图粘合此缓冲区将失败。
     uint32_t mGenerationNumber;
 };
 

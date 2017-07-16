@@ -392,6 +392,7 @@ status_t BufferQueueProducer::dequeueBuffer(int *outSlot,
 
         int found = BufferItem::INVALID_BUFFER_SLOT;
         while (found == BufferItem::INVALID_BUFFER_SLOT) {
+            // 找寻free状态的Slot,如果没有则等待
             status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue,
                     &found);
             if (status != NO_ERROR) {
@@ -410,6 +411,10 @@ status_t BufferQueueProducer::dequeueBuffer(int *outSlot,
             // waitForFreeSlotThenRelock must have returned a slot containing a
             // buffer. If this buffer would require reallocation to meet the
             // requested attributes, we free it and attempt to get another one.
+            // 如果我们不允许分配一个新的图片缓冲区，
+            // 则waitForFreeSlotThenRelock方法必须返回一个包含buffer的slot。
+            // 如果图形缓冲区需要重新分配，用以适应请求的参数，我们释放它，并试图
+            // 获取另一个。
             if (!mCore->mAllowAllocation) {
                 if (buffer->needsReallocation(width, height, format, usage)) {
                     if (mCore->mSharedBufferSlot == found) {
@@ -461,6 +466,7 @@ status_t BufferQueueProducer::dequeueBuffer(int *outSlot,
         } else {
             // We add 1 because that will be the frame number when this buffer
             // is queued
+            // 我们增加1，因为buffer在入队的时候，这个值将会成为frame号数
             mCore->mBufferAge =
                     mCore->mFrameCounter + 1 - mSlots[found].mFrameNumber;
         }

@@ -561,6 +561,8 @@ private:
     // Returns mCurrentScaling mode (originating from the
     // Client) or mOverrideScalingMode mode (originating from
     // the Surface Controller) if set.
+    // 返回当前缩放模式(来自于客户端的原始值)，
+    // 或者重新缩放模式(来自于surface controller)
     uint32_t getEffectiveScalingMode() const;
 public:
     void notifyAvailableFrames();

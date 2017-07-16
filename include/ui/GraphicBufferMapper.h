@@ -30,6 +30,7 @@ namespace android {
 
 class Rect;
 
+// 主要为GraphicBuffer类与gralloc硬件抽象层打交道？
 class GraphicBufferMapper : public Singleton<GraphicBufferMapper>
 {
 public:

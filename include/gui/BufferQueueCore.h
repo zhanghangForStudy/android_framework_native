@@ -145,6 +145,8 @@ private:
 
     // mAllocator is the connection to SurfaceFlinger that is used to allocate
     // new GraphicBuffer objects.
+    // 分配器是一个连着SurfaceFlinger的连接者，此连接者被用来分配一个新的
+    // GraphicBuffer对象
     sp<IGraphicBufferAlloc> mAllocator;
 
     // mMutex is the mutex used to prevent concurrent access to the member
