@@ -45,6 +45,14 @@ namespace android {
  * Surface.  Surface then forwards the buffers through Binder IPC
  * to the BufferQueue's producer interface, providing the new frame to a
  * consumer such as GLConsumer.
+ *
+ * Surface是一个提供BufferQueue之中的GraphicsBuffer对象的本地窗口实现者/
+ *
+ * 此类一般而言，是被，期望使用某些方式渲染帧（可能是OpenGL,一个软件渲染器,或者一个硬件解码器）
+ * 的程序，使用；同时，此类拥有，被其创建，并传递给SurfaceFlinger合成的帧。例如，一个视频解码器
+ * 能够渲染一个帧并调用eglSwapBuffers()方法，eglSwapBuffers()方法能够执行有Surface类定义的，
+ * 本地窗口回调。Surface类，还能通过binder跨进程同学，传递buffer对象给BufferQueue的生产者接口，
+ * 由此为类似于GLConsumer的消耗者，提供一张新的帧
  */
 class Surface
     : public ANativeObjectBase<ANativeWindow, Surface, RefBase>

@@ -37,6 +37,11 @@ public:
     // In normal operation, this is called the first time slot N is returned
     // by dequeueBuffer.  It must be called again if dequeueBuffer returns
     // flags indicating that previously-returned buffers are no longer valid.
+    //
+    // requestBuffer方法为给定的槽位，返回其对应的GraphicBuffer对象。
+    // 在一般的操作之中，在槽位第一次通过dequeueBuffer方法返回的时候，此方法被调用。
+    // 而当dequeueBuffer方法返回了一个标识，表明之前返回的buffer对象不在有效的时候，
+    // 此方法必须被再次调用。
     virtual status_t requestBuffer(int slot, sp<GraphicBuffer>* buf);
 
     // see IGraphicsBufferProducer::setMaxDequeuedBufferCount
@@ -80,6 +85,26 @@ public:
     //
     // In both cases, the producer will need to call requestBuffer to get a
     // GraphicBuffer handle for the returned slot.
+    //
+    // dequeueBuffer方法获取下一个供生产者使用的buffer槽位索引。
+    // 如果一个槽位可用，则具体的槽位索引将被写入outSlot参数指向的地址，并且一个OK的状态被返回。
+    // 如果没有槽位可用，则-EBUSY被返回，并且outSlot不被修改。
+    // outFence参数将被更新，以持有与此buffer相关的栅栏。buffer对象的内容不准覆盖，除非此栅栏
+    // 发送了一个信号。如果此fence是Fence::NO_FENCE的，则此buffer对象可用立即写入(内容)。
+    // width和height参数小于或者等于GL_MAX_VIEWPORT_DIMS 与 GL_MAX_TEXTURE_SIZE两值中的最小值。
+    // 由于无效尺寸引起的一个错误，可能不会被抛出，除非updateTexImage()方法被调用了。如果width与height
+    // 两个值都为0，则有setDefaultBufferSize()方法指定的默认值，将被使用。
+    //
+    // 如果format参数为0，则默认的格式将被使用。
+    //
+    // usage参数指定了gralloca buffer对象的用途标志。这些值在gralloc.h文件中被枚举。
+    //
+    // 返回值可能是一个负值，表明一个错误；或者一个非负数，表示一个标志的集合。如果相关标志被设置了，则返回值是有效的，
+    // 但是额外的动作必须被执行。
+    // 如果GraphicBufferProducer::BUFFER_NEEDS_REALLOCATION被设置了，则必须清除生产者对返回的槽位中的GraphicBuffer对象引用的
+    // 缓存。
+    // 如果IGraphicBufferProducer::RELEASE_ALL_BUFFERS被设置了，则生产者必须删除对所有槽位的引用。
+    // 在这两种情况下，生产者都将需要调用requestBuffer方法，用以获取返回的槽位对应的GraphicBuffer对象的一个句柄。
     virtual status_t dequeueBuffer(int *outSlot, sp<Fence>* outFence,
             uint32_t width, uint32_t height, PixelFormat format,
             uint32_t usage);
@@ -109,6 +134,18 @@ public:
     // Some values are returned in the output struct: the current settings
     // for default width and height, the current transform hint, and the
     // number of queued buffers.
+    //
+    // queueBuffer方法将一个填充好的buffer对象返回给BufferQueue对象。
+    //
+    // 额外的数据将在QueueBufferInput类中被提供。特别的，一个时间戳必须被提供。
+    // 此时间戳是纳秒级的，并且单调递增。它的其他含义（例如0点等）是由生产者指定的
+    // 并且应该由生产者描述。
+    //
+    // 调用者可以提供一个栅栏，此栅栏将会在所有的渲染操作完成时，发送一个信号。
+    // 除此之外，NO_FENCE也可以被使用，用来表示此buffer对象是立即准备的。
+    //
+    // 一些值将被通过output结构体被返回：默认宽高相关的当前设置，当前的转换点，
+    // 以及入队的buffer对象的号码。
     virtual status_t queueBuffer(int slot,
             const QueueBufferInput& input, QueueBufferOutput* output);
 
@@ -117,6 +154,9 @@ public:
     //
     // The buffer will not be overwritten until the fence signals.  The fence
     // will usually be the one obtained from dequeueBuffer.
+    // cancelBuffer方法将一个已经出队的buffer对象返回给BufferQueue对象，但是不需要入队此buffer对象。
+    // 此buffer的内容将不能重写，除非栅栏发出了一个信号；一般而言，栅栏对象与从dequeueBuffer方法获取的
+    // 栅栏是一致的
     virtual status_t cancelBuffer(int slot, const sp<Fence>& fence);
 
     // Query native window attributes.  The "what" values are enumerated in
@@ -132,6 +172,13 @@ public:
     // it's still connected to a producer).
     //
     // APIs are enumerated in window.h (e.g. NATIVE_WINDOW_API_CPU).
+    //
+    // connect方法试图将一个生产者连接至BufferQueue对象。
+    // 此方法的调用，必须在除了getAllocator方法之外的其他方法调用前，被调用。
+    // 一个消耗者必须已经连接了。
+    // 如果connect方法之前被调用了，并且没有相应的disconnect方法被调用，
+    // 那么再次调用connect方法，将会引起一个失败。
+    // api参数的值在window.h文件中被枚举。
     virtual status_t connect(const sp<IProducerListener>& listener,
             int api, bool producerControlledByApp, QueueBufferOutput* output);
 

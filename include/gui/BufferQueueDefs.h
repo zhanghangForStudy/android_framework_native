@@ -26,8 +26,12 @@ namespace android {
         // BufferQueue will keep track of at most this value of buffers.
         // Attempts at runtime to increase the number of buffers past this
         // will fail.
+        // BufferQueue将保持对缓存的此值进行追踪。
+        // 试图在运行期期间，增加buffer数组的长度，将会失败
+        // 早期的版本中是32？
         enum { NUM_BUFFER_SLOTS = 64 };
 
+        // 定义BufferSlot[NUM_BUFFER_SLOTS]的别名为SlotsType
         typedef BufferSlot SlotsType[NUM_BUFFER_SLOTS];
     } // namespace BufferQueueDefs
 } // namespace android
