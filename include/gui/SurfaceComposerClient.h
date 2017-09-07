@@ -58,9 +58,11 @@ public:
     status_t    initCheck() const;
 
     // Return the connection of this client
+    // 返回此客户端的连接
     sp<IBinder> connection() const;
 
     // Forcibly remove connection before all references have gone away.
+    // 在所有的应用消失之前，强制删除连接
     void        dispose();
 
     // callback when the composer is dies
@@ -68,6 +70,7 @@ public:
             void* cookie = NULL, uint32_t flags = 0);
 
     // Get a list of supported configurations for a given display
+    // 返回给定显示器，所支持的配置
     static status_t getDisplayConfigs(const sp<IBinder>& display,
             Vector<DisplayInfo>* configs);
 
@@ -109,6 +112,7 @@ public:
     );
 
     //! Create a virtual display
+    // 创建一个虚拟的显示器
     static sp<IBinder> createDisplay(const String8& displayName, bool secure);
 
     //! Destroy a virtual display
@@ -124,6 +128,9 @@ public:
     // several surfaces can be updated in one transaction, all changes are
     // committed at once when the transaction is closed.
     // closeGlobalTransaction() requires an IPC with the server.
+    // 所有的消耗者参数都必须在一个事务之中改变；
+    // 几个surface能够在一个事务之中更新，所有改变都将在此事务之中一并提交。
+    // closeGlobalTransaction需要一个IPC通信。
 
     //! Open a composer transaction on all active SurfaceComposerClients.
     static void openGlobalTransaction();

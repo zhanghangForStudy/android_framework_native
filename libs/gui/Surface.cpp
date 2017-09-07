@@ -263,6 +263,8 @@ int Surface::setSwapInterval(int interval) {
     return NO_ERROR;
 }
 
+// ＠param buffer GraphicBuffer
+// @param fenceFd栅栏句柄
 int Surface::dequeueBuffer(android_native_buffer_t** buffer, int* fenceFd) {
     ATRACE_CALL();
     ALOGV("Surface::dequeueBuffer");
@@ -281,6 +283,7 @@ int Surface::dequeueBuffer(android_native_buffer_t** buffer, int* fenceFd) {
         reqFormat = mReqFormat;
         reqUsage = mReqUsage;
 
+        // 共享模式的处理
         if (mSharedBufferMode && mAutoRefresh && mSharedBufferSlot !=
                 BufferItem::INVALID_BUFFER_SLOT) {
             sp<GraphicBuffer>& gbuf(mSlots[mSharedBufferSlot].buffer);
@@ -295,6 +298,7 @@ int Surface::dequeueBuffer(android_native_buffer_t** buffer, int* fenceFd) {
     int buf = -1;
     sp<Fence> fence;
     nsecs_t now = systemTime();
+    // ＯＫ向surfaceflinger通信了
     status_t result = mGraphicBufferProducer->dequeueBuffer(&buf, &fence,
             reqWidth, reqHeight, reqFormat, reqUsage);
     mLastDequeueDuration = systemTime() - now;
@@ -313,10 +317,12 @@ int Surface::dequeueBuffer(android_native_buffer_t** buffer, int* fenceFd) {
     // this should never happen
     ALOGE_IF(fence == NULL, "Surface::dequeueBuffer: received null Fence! buf=%d", buf);
 
+    // BufferQueue端需要此Surface对象释放所有的buffer
     if (result & IGraphicBufferProducer::RELEASE_ALL_BUFFERS) {
         freeAllBuffers();
     }
 
+　　 // 需要请求具体的图形缓冲区内存
     if ((result & IGraphicBufferProducer::BUFFER_NEEDS_REALLOCATION) || gbuf == 0) {
         result = mGraphicBufferProducer->requestBuffer(buf, &gbuf);
         if (result != NO_ERROR) {
@@ -340,6 +346,7 @@ int Surface::dequeueBuffer(android_native_buffer_t** buffer, int* fenceFd) {
 
     *buffer = gbuf.get();
 
+    // 共享模式的一些处理
     if (mSharedBufferMode && mAutoRefresh) {
         mSharedBufferSlot = buf;
         mSharedBufferHasBeenQueued = false;
@@ -1169,6 +1176,11 @@ void Surface::setSurfaceDamage(android_native_rect_t* rects, size_t numRects) {
 // ----------------------------------------------------------------------
 // the lock/unlock APIs must be used from the same thread
 
+// 从src之中赋值reg指定的区域到dst之上
+// 1.锁定src与dst对应的图形缓冲区中reg指定的区域;
+// 2.遍历reg区域中的每个矩形；
+// 3.针对每个矩形，一行一行的复制内存内容；
+// 4.解锁src与dst对应的图形缓冲区中reg指定的区域；
 static status_t copyBlt(
         const sp<GraphicBuffer>& dst,
         const sp<GraphicBuffer>& src,
@@ -1176,8 +1188,11 @@ static status_t copyBlt(
 {
     // src and dst with, height and format must be identical. no verification
     // is done here.
+    // src与dst的宽度、高度以及格式必须是一致的。
+    // 此方法之中没有对此一致性进行验证
     status_t err;
     uint8_t* src_bits = NULL;
+   // 锁定需要复制的区域
     err = src->lock(GRALLOC_USAGE_SW_READ_OFTEN, reg.bounds(),
             reinterpret_cast<void**>(&src_bits));
     ALOGE_IF(err, "error locking src buffer %s", strerror(-err));
@@ -1187,20 +1202,28 @@ static status_t copyBlt(
             reinterpret_cast<void**>(&dst_bits));
     ALOGE_IF(err, "error locking dst buffer %s", strerror(-err));
 
+    // 区域迭代器
     Region::const_iterator head(reg.begin());
     Region::const_iterator tail(reg.end());
+    // 如果需要复制的区域存在，且源缓冲区与目标缓冲区对应的锁定内存地址存在
     if (head != tail && src_bits && dst_bits) {
+        // bpp表示当前图形缓冲区的一个像素的字节个数
         const size_t bpp = bytesPerPixel(src->format);
+        // 一行的字节个数
         const size_t dbpr = static_cast<uint32_t>(dst->stride) * bpp;
         const size_t sbpr = static_cast<uint32_t>(src->stride) * bpp;
 
         while (head != tail) {
             const Rect& r(*head++);
+            // 高度就是行数
             int32_t h = r.height();
             if (h <= 0) continue;
+            // size 表示一行的字节个数
             size_t size = static_cast<uint32_t>(r.width()) * bpp;
+            // s表示源图形缓冲区中，当前这个矩形的入口内存地址，单位为字节
             uint8_t const * s = src_bits +
                     static_cast<uint32_t>(r.left + src->stride * r.top) * bpp;
+            // d表示目标图形缓冲区中，当前这个矩形的入口内存地址，单位为字节
             uint8_t       * d = dst_bits +
                     static_cast<uint32_t>(r.left + dst->stride * r.top) * bpp;
             if (dbpr==sbpr && size==sbpr) {
@@ -1209,7 +1232,9 @@ static status_t copyBlt(
             }
             do {
                 memcpy(d, s, size);
+                // 复制完毕,直接跳过此行
                 d += dbpr;
+                // 复制完毕,直接跳过此行
                 s += sbpr;
             } while (--h > 0);
         }
@@ -1226,15 +1251,26 @@ static status_t copyBlt(
 
 // ----------------------------------------------------------------------------
 
+// ＠param outBuffer图形缓冲区的具体内存地址?
+// ＠param inOutDirtyBounds脏区域，可为空
+// 1.如果没有连接Producer,则连接远程producer;
+// 2.出队一个图形缓冲区;
+// 3.判断能否复制上一个图形缓冲区的内容，如果可以，直接复制上一个图形缓冲区可复制区域的内容；
+// 4.计算并更新最终的脏区域;
+// 5.在buffer之上锁定脏区域；
+// 6.更新ANativeWindow_Buffer的相关属性
 status_t Surface::lock(
         ANativeWindow_Buffer* outBuffer, ARect* inOutDirtyBounds)
 {
+　　// 禁止重复锁定
+    // mLockedBuffer是一个指向GraphicBuffer对象的强指针
     if (mLockedBuffer != 0) {
         ALOGE("Surface::lock failed, already locked");
         return INVALID_OPERATION;
     }
 
     if (!mConnectedToCpu) {
+        // 连接IGraphicBufferProduncer对象
         int err = Surface::connect(NATIVE_WINDOW_API_CPU);
         if (err) {
             return err;
@@ -1245,22 +1281,33 @@ status_t Surface::lock(
 
     ANativeWindowBuffer* out;
     int fenceFd = -1;
+    // 出队一个Buffer
     status_t err = dequeueBuffer(&out, &fenceFd);
     ALOGE_IF(err, "dequeueBuffer failed (%s)", strerror(-err));
     if (err == NO_ERROR) {
         sp<GraphicBuffer> backBuffer(GraphicBuffer::getSelf(out));
+        // GraphicBuffer的范围
         const Rect bounds(backBuffer->width, backBuffer->height);
 
         Region newDirtyRegion;
         if (inOutDirtyBounds) {
+        　　 // 如果存在脏区域
             newDirtyRegion.set(static_cast<Rect const&>(*inOutDirtyBounds));
+            // 获取交集?
             newDirtyRegion.andSelf(bounds);
         } else {
+        　　// 如果没有传入脏区域，则将整个GraphicBuffer的宽高作为脏区域
             newDirtyRegion.set(bounds);
         }
 
         // figure out if we can copy the frontbuffer back
+        // 指出是否我们可以从前一个buffer之中copy内容
         const sp<GraphicBuffer>& frontBuffer(mPostedBuffer);
+        // 能copy的条件是：
+        // 前一个buffer不为空，且
+        // 宽度与当前buffer相同，且
+        // 高度与当前buffer相同，且
+        // 格式与当前buffer相同
         const bool canCopyBack = (frontBuffer != 0 &&
                 backBuffer->width  == frontBuffer->width &&
                 backBuffer->height == frontBuffer->height &&
@@ -1268,15 +1315,22 @@ status_t Surface::lock(
 
         if (canCopyBack) {
             // copy the area that is invalid and not repainted this round
+            // 复制无效且无需重绘的区域
+            // substract从某个区域之中减去指定的区域
             const Region copyback(mDirtyRegion.subtract(newDirtyRegion));
             if (!copyback.isEmpty())
+            　　// 如果可复制的区域不为空，则进行复制
                 copyBlt(backBuffer, frontBuffer, copyback);
         } else {
             // if we can't copy-back anything, modify the user's dirty
             // region to make sure they redraw the whole buffer
+            // 如果我们不能复制任何事情，则修改用户的脏区域，
+            // 以确保系统能够重绘整个buffer
             newDirtyRegion.set(bounds);
             mDirtyRegion.clear();
             Mutex::Autolock lock(mMutex);
+            // 不能复制则表示当前需要的buffer的格式与尺寸发生了变化，
+            // 那么所有的buffer中的脏区域都失效了?
             for (size_t i=0 ; i<NUM_BUFFER_SLOTS ; i++) {
                 mSlots[i].dirtyRegion.clear();
             }
@@ -1285,6 +1339,7 @@ status_t Surface::lock(
 
         { // scope for the lock
             Mutex::Autolock lock(mMutex);
+            //　将计算得出的最终脏区域，应用到出队的buffer槽位之中
             int backBufferSlot(getSlotFromBufferLocked(backBuffer.get()));
             if (backBufferSlot >= 0) {
                 Region& dirtyRegion(mSlots[backBufferSlot].dirtyRegion);
@@ -1293,12 +1348,14 @@ status_t Surface::lock(
             }
         }
 
+        // 获取并集,更新mDirtyRegion
         mDirtyRegion.orSelf(newDirtyRegion);
         if (inOutDirtyBounds) {
             *inOutDirtyBounds = newDirtyRegion.getBounds();
         }
 
         void* vaddr;
+        // 异步锁定图形缓冲区
         status_t res = backBuffer->lockAsync(
                 GRALLOC_USAGE_SW_READ_OFTEN | GRALLOC_USAGE_SW_WRITE_OFTEN,
                 newDirtyRegion.bounds(), &vaddr, fenceFd);
@@ -1402,6 +1459,7 @@ status_t Surface::readFromParcel(const Parcel* parcel, bool nameAlreadyRead) {
     res = parcel->readStrongBinder(&binder);
     if (res != OK) return res;
 
+    // 读取gbp即可
     graphicBufferProducer = interface_cast<IGraphicBufferProducer>(binder);
 
     return OK;

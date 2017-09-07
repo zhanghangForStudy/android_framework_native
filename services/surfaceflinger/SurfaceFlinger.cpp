@@ -2194,6 +2194,7 @@ status_t SurfaceFlinger::addClientLayer(const sp<Client>& client,
         const sp<Layer>& lbc)
 {
     // add this layer to the current state list
+    // 将创建的Layer对象添加至当前状态的列表之中
     {
         Mutex::Autolock _l(mStateLock);
         if (mCurrentState.layersSortedByZ.size() >= MAX_LAYERS) {
@@ -2204,6 +2205,7 @@ status_t SurfaceFlinger::addClientLayer(const sp<Client>& client,
     }
 
     // attach this layer to the client
+    //　回调Client对象的attachLayer方法
     client->attachLayer(handle, lbc);
 
     return NO_ERROR;
@@ -2458,6 +2460,8 @@ uint32_t SurfaceFlinger::setClientStateLocked(
     return flags;
 }
 
+
+// 创建Layer
 status_t SurfaceFlinger::createLayer(
         const String8& name,
         const sp<Client>& client,
@@ -2475,6 +2479,7 @@ status_t SurfaceFlinger::createLayer(
 
     sp<Layer> layer;
 
+   // 创建Layer对象
     switch (flags & ISurfaceComposerClient::eFXSurfaceMask) {
         case ISurfaceComposerClient::eFXSurfaceNormal:
             result = createNormalLayer(client,
@@ -2495,6 +2500,7 @@ status_t SurfaceFlinger::createLayer(
         return result;
     }
 
+    // 将上一步创建的Layer对象添加到对应的Client之中
     result = addClientLayer(client, *handle, *gbp, layer);
     if (result != NO_ERROR) {
         return result;
@@ -2504,6 +2510,16 @@ status_t SurfaceFlinger::createLayer(
     return result;
 }
 
+// 创建普通的Layer
+// @param client   客户端对象
+// @param name     Layer的名称
+// @param w        请求的宽度
+// @param h        请求的高度
+// @param flag     相关标识？
+// @param format   像素格式
+// @param handle　　Layer销毁者的句柄
+// @param gbp       像素缓存生产者
+// @param outLayer　创建出来的Layer
 status_t SurfaceFlinger::createNormalLayer(const sp<Client>& client,
         const String8& name, uint32_t w, uint32_t h, uint32_t flags, PixelFormat& format,
         sp<IBinder>* handle, sp<IGraphicBufferProducer>* gbp, sp<Layer>* outLayer)
@@ -2519,10 +2535,14 @@ status_t SurfaceFlinger::createNormalLayer(const sp<Client>& client,
         break;
     }
 
+    // 创建Layer对象
     *outLayer = new Layer(this, client, name, w, h, flags);
+    // 设置一些图像缓冲区的属性？
     status_t err = (*outLayer)->setBuffers(w, h, format, flags);
     if (err == NO_ERROR) {
+        // Layer销毁者的句柄？
         *handle = (*outLayer)->getHandle();
+        // 获取图像缓冲区生产者
         *gbp = (*outLayer)->getProducer();
     }
 

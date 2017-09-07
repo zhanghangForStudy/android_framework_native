@@ -112,6 +112,8 @@ status_t Client::createSurface(
     /*
      * createSurface must be called from the GL thread so that it can
      * have access to the GL context.
+     *
+     * createSurface必须从GLThread方法之中调用，以便它能够访问ＧＬ context对象
      */
 
     class MessageCreateLayer : public MessageBase {

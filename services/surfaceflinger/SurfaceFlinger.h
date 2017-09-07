@@ -189,7 +189,9 @@ private:
     };
 
     struct State {
+        //　Layer向量
         LayerVector layersSortedByZ;
+        // 相关的显示器?
         DefaultKeyedVector< wp<IBinder>, DisplayDeviceState> displays;
     };
 

@@ -93,6 +93,7 @@ BufferQueueCore::BufferQueueCore(const sp<IGraphicBufferAlloc>& allocator) :
     mUniqueId(getUniqueId())
 {
     if (allocator == NULL) {
+        // SurfaceFlinger
         sp<ISurfaceComposer> composer(ComposerService::getComposerService());
         mAllocator = composer->createGraphicBufferAlloc();
         if (mAllocator == NULL) {

@@ -223,6 +223,8 @@ sp<Surface> SurfaceControl::getSurface() const
     if (mSurfaceData == 0) {
         // This surface is always consumed by SurfaceFlinger, so the
         // producerControlledByApp value doesn't matter; using false.
+        // 此Surface对象总是被SurfaceFlinger消耗，
+        // 所以producerControlledByApp属性的值总是使用false.
         mSurfaceData = new Surface(mGraphicBufferProducer, false);
     }
     return mSurfaceData;

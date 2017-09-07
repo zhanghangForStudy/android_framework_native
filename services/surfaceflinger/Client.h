@@ -73,6 +73,7 @@ private:
     sp<SurfaceFlinger> mFlinger;
 
     // protected by mLock
+    // 此客户端持有的Layer对象
     DefaultKeyedVector< wp<IBinder>, wp<Layer> > mLayers;
 
     // thread-safe

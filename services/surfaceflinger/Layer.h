@@ -644,6 +644,7 @@ private:
     const wp<Client> mClientRef;
 
     // This layer can be a cursor on some displays.
+    // 此layer在某些显示屏幕上能够作为一个光标
     bool mPotentialCursor;
 
     // Local copy of the queued contents of the incoming BufferQueue

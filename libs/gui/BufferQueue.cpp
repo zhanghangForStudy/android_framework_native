@@ -70,6 +70,10 @@ bool BufferQueue::ProxyConsumerListener::getFrameTimestamps(
     return false;
 }
 
+// 步骤：
+// 1.创建BufferQueueCore;
+// 2.根据创建的BufferQueueCore，创建BufferQueueProducer对象；
+// 3.根据创建的BufferQueueCore,创建BufferQueueConsumer对象；
 void BufferQueue::createBufferQueue(sp<IGraphicBufferProducer>* outProducer,
         sp<IGraphicBufferConsumer>* outConsumer,
         const sp<IGraphicBufferAlloc>& allocator) {

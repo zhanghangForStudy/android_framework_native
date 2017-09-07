@@ -349,11 +349,13 @@ status_t BufferQueueProducer::dequeueBuffer(int *outSlot,
         Mutex::Autolock lock(mCore->mMutex);
         mConsumerName = mCore->mConsumerName;
 
+        // å¦‚æžœæ¶ˆè€—è€…æ–­å¼€äº†ä¸Žæ­¤BufferQueueçš„è¿žæŽ¥ï¼Œåˆ™è®¤ä¸ºæ­¤BufferQueueæ˜¯è¢«åºŸå¼ƒçš„å¯¹è±¡
         if (mCore->mIsAbandoned) {
             BQ_LOGE("dequeueBuffer: BufferQueue has been abandoned");
             return NO_INIT;
         }
 
+ã€€ã€€ã€€ã€€ã€€// å½“å‰BufferQueueå¹¶æ²¡æœ‰è¢«ç”Ÿäº§è€…è¿žæŽ¥
         if (mCore->mConnectedApi == BufferQueueCore::NO_CONNECTED_API) {
             BQ_LOGE("dequeueBuffer: BufferQueue has no connected producer");
             return NO_INIT;
@@ -392,7 +394,7 @@ status_t BufferQueueProducer::dequeueBuffer(int *outSlot,
 
         int found = BufferItem::INVALID_BUFFER_SLOT;
         while (found == BufferItem::INVALID_BUFFER_SLOT) {
-            // ÕÒÑ°free×´Ì¬µÄSlot,Èç¹ûÃ»ÓÐÔòµÈ´ý
+            // æ‰¾å¯»freeçŠ¶æ€çš„Slot,å¦‚æžœæ²¡æœ‰åˆ™ç­‰å¾…
             status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue,
                     &found);
             if (status != NO_ERROR) {
@@ -411,10 +413,10 @@ status_t BufferQueueProducer::dequeueBuffer(int *outSlot,
             // waitForFreeSlotThenRelock must have returned a slot containing a
             // buffer. If this buffer would require reallocation to meet the
             // requested attributes, we free it and attempt to get another one.
-            // Èç¹ûÎÒÃÇ²»ÔÊÐí·ÖÅäÒ»¸öÐÂµÄÍ¼Æ¬»º³åÇø£¬
-            // ÔòwaitForFreeSlotThenRelock·½·¨±ØÐë·µ»ØÒ»¸ö°üº¬bufferµÄslot¡£
-            // Èç¹ûÍ¼ÐÎ»º³åÇøÐèÒªÖØÐÂ·ÖÅä£¬ÓÃÒÔÊÊÓ¦ÇëÇóµÄ²ÎÊý£¬ÎÒÃÇÊÍ·ÅËü£¬²¢ÊÔÍ¼
-            // »ñÈ¡ÁíÒ»¸ö¡£
+            // å¦‚æžœæˆ‘ä»¬ä¸å…è®¸åˆ†é…ä¸€ä¸ªæ–°çš„å›¾ç‰‡ç¼“å†²åŒºï¼Œ
+            // åˆ™waitForFreeSlotThenRelockæ–¹æ³•å¿…é¡»è¿”å›žä¸€ä¸ªåŒ…å«bufferçš„slotã€‚
+            // å¦‚æžœå›¾å½¢ç¼“å†²åŒºéœ€è¦é‡æ–°åˆ†é…ï¼Œç”¨ä»¥é€‚åº”è¯·æ±‚çš„å‚æ•°ï¼Œæˆ‘ä»¬é‡Šæ”¾å®ƒï¼Œå¹¶è¯•å›¾
+            // èŽ·å–å¦ä¸€ä¸ªã€‚
             if (!mCore->mAllowAllocation) {
                 if (buffer->needsReallocation(width, height, format, usage)) {
                     if (mCore->mSharedBufferSlot == found) {
@@ -466,7 +468,7 @@ status_t BufferQueueProducer::dequeueBuffer(int *outSlot,
         } else {
             // We add 1 because that will be the frame number when this buffer
             // is queued
-            // ÎÒÃÇÔö¼Ó1£¬ÒòÎªbufferÔÚÈë¶ÓµÄÊ±ºò£¬Õâ¸öÖµ½«»á³ÉÎªframeºÅÊý
+            // æˆ‘ä»¬å¢žåŠ 1ï¼Œå› ä¸ºbufferåœ¨å…¥é˜Ÿçš„æ—¶å€™ï¼Œè¿™ä¸ªå€¼å°†ä¼šæˆä¸ºframeå·æ•°
             mCore->mBufferAge =
                     mCore->mFrameCounter + 1 - mSlots[found].mFrameNumber;
         }

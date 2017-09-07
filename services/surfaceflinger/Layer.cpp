@@ -155,8 +155,10 @@ void Layer::onFirstRef() {
     // Creates a custom BufferQueue for SurfaceFlingerConsumer to use
     sp<IGraphicBufferProducer> producer;
     sp<IGraphicBufferConsumer> consumer;
+    // 创建bufferqueue
     BufferQueue::createBufferQueue(&producer, &consumer);
     mProducer = new MonitoredProducer(producer, mFlinger);
+    // 创建SurfaceFlingerConsumer
     mSurfaceFlingerConsumer = new SurfaceFlingerConsumer(consumer, mTextureName,
             this);
     mSurfaceFlingerConsumer->setConsumerUsageBits(getEffectiveUsage(0));
@@ -303,8 +305,11 @@ status_t Layer::setBuffers( uint32_t w, uint32_t h,
 
     mFormat = format;
 
+    // 是否是潜在的光标
     mPotentialCursor = (flags & ISurfaceComposerClient::eCursorWindow) ? true : false;
+    // 是否被APP保护
     mProtectedByApp = (flags & ISurfaceComposerClient::eProtectedByApp) ? true : false;
+    // 是否不透明
     mCurrentOpacity = getOpacityForFormat(format);
 
     mSurfaceFlingerConsumer->setDefaultBufferSize(w, h);
@@ -321,6 +326,13 @@ status_t Layer::setBuffers( uint32_t w, uint32_t h,
  *
  * LayerCleaner ensures that mFlinger->onLayerDestroyed() is called for
  * this layer when the handle is destroyed.
+ *
+ * Handler对象就是一个BBinder对象，用来传递给远程的客户端；
+ * 我们无需在服务端进程之中保持任何引用，当客户端进程删除它的引用时，
+ * dtor(回收器?)能够被调用
+ *
+ * LayerCleaner能够确保mFlinger->onLayerDestroyed()被调用，当此Handler对象
+ * 被销毁的时候。
  */
 class Layer::Handle : public BBinder, public LayerCleaner {
     public:

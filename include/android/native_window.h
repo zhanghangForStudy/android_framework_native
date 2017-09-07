@@ -66,6 +66,8 @@ typedef struct ANativeWindow_Buffer {
 
     // The number of *pixels* that a line in the buffer takes in
     // memory.  This may be >= width.
+    // 在图形缓冲区之中,一行内存中包含的像素个数
+    // 此值可能大于等于宽度
     int32_t stride;
 
     // The format of the buffer.  One of WINDOW_FORMAT_*

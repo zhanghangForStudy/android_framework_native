@@ -532,6 +532,7 @@ SurfaceComposerClient::SurfaceComposerClient()
 void SurfaceComposerClient::onFirstRef() {
     sp<ISurfaceComposer> sm(ComposerService::getComposerService());
     if (sm != 0) {
+        // 会在此处进行跨进程通信，创建一个frameworks/native/services/surfaceflinger/Client.h
         sp<ISurfaceComposerClient> conn = sm->createConnection();
         if (conn != 0) {
             mClient = conn;
@@ -581,10 +582,12 @@ sp<SurfaceControl> SurfaceComposerClient::createSurface(
     if (mStatus == NO_ERROR) {
         sp<IBinder> handle;
         sp<IGraphicBufferProducer> gbp;
+        // 跨进程通信，SurfaceFlinger端创建了一个Layer对象，并将其添加到对应的Client对象、SurfaceFlinger之中
         status_t err = mClient->createSurface(name, w, h, format, flags,
                 &handle, &gbp);
         ALOGE_IF(err, "SurfaceComposerClient::createSurface error %s", strerror(-err));
         if (err == NO_ERROR) {
+        　　// 创建并初始化SurfaceControl,其中SurfaceControl对象与Layer对象相对应
             sur = new SurfaceControl(this, handle, gbp);
         }
     }
