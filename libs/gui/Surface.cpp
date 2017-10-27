@@ -824,10 +824,12 @@ int Surface::connect(int api, const sp<IProducerListener>& listener) {
     ALOGV("Surface::connect");
     Mutex::Autolock lock(mMutex);
     IGraphicBufferProducer::QueueBufferOutput output;
+    // 一般而言mProducerControlledByApp的值为true
     int err = mGraphicBufferProducer->connect(listener, api, mProducerControlledByApp, &output);
     if (err == NO_ERROR) {
         uint32_t numPendingBuffers = 0;
         uint32_t hint = 0;
+        // 赋值此Surface的一些默认值，例如默认宽高度等
         output.deflate(&mDefaultWidth, &mDefaultHeight, &hint,
                 &numPendingBuffers, &mNextFrameNumber);
 
@@ -836,14 +838,20 @@ int Surface::connect(int api, const sp<IProducerListener>& listener) {
             mTransformHint = hint;
         }
 
+        // 消耗者是否正在生产者后面运行，大于１个的buffer对象
         mConsumerRunningBehind = (numPendingBuffers >= 2);
     }
+
+    // 连接成功
     if (!err && api == NATIVE_WINDOW_API_CPU) {
         mConnectedToCpu = true;
         // Clear the dirty region in case we're switching from a non-CPU API
+        // 清空脏区域，以防止我们从一个非CPU API切换而来
         mDirtyRegion.clear();
     } else if (!err) {
         // Initialize the dirty region for tracking surface damage
+        // 如果api不等于NATIVE_WINDOW_API_CPU,
+        // 则将脏区域初始化，以便追踪surface对象的损害(程度)
         mDirtyRegion = Region::INVALID_REGION;
     }
 
@@ -1271,6 +1279,7 @@ status_t Surface::lock(
 
     if (!mConnectedToCpu) {
         // 连接IGraphicBufferProduncer对象
+        // NATIVE_WINDOW_API_CPU:使用ＣＰＵ填充完缓冲区后，缓冲区将会入队
         int err = Surface::connect(NATIVE_WINDOW_API_CPU);
         if (err) {
             return err;

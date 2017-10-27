@@ -259,14 +259,17 @@ void BufferQueueCore::discardFreeBuffersLocked() {
 bool BufferQueueCore::adjustAvailableSlotsLocked(int delta) {
     if (delta >= 0) {
         // If we're going to fail, do so before modifying anything
+        // 如果调整值大于当前未使用的槽位数，则直接返回false
         if (delta > static_cast<int>(mUnusedSlots.size())) {
             return false;
         }
         while (delta > 0) {
             if (mUnusedSlots.empty()) {
+            　　// 没有可用的槽位数
                 return false;
             }
             int slot = mUnusedSlots.back();
+            // 由未使用状态——>自由状态
             mUnusedSlots.pop_back();
             mFreeSlots.insert(slot);
             delta--;

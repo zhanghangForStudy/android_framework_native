@@ -1077,27 +1077,35 @@ status_t BufferQueueProducer::connect(const sp<IProducerListener>& listener,
     BQ_LOGV("connect: api=%d producerControlledByApp=%s", api,
             producerControlledByApp ? "true" : "false");
 
+　　// 判断bufferqueue是否被丢弃了
     if (mCore->mIsAbandoned) {
         BQ_LOGE("connect: BufferQueue has been abandoned");
         return NO_INIT;
     }
 
+    //　bufferqueue是否拥有消耗者
     if (mCore->mConsumerListener == NULL) {
         BQ_LOGE("connect: BufferQueue has no consumer");
         return NO_INIT;
     }
-
+　　
+　　// 返回属性是否为空
     if (output == NULL) {
         BQ_LOGE("connect: output was NULL");
         return BAD_VALUE;
     }
 
+　　// 判断是否已经连接了
     if (mCore->mConnectedApi != BufferQueueCore::NO_CONNECTED_API) {
         BQ_LOGE("connect: already connected (cur=%d req=%d)",
                 mCore->mConnectedApi, api);
         return BAD_VALUE;
     }
 
+    // 判断是否需要调整更多的槽位
+    // getMaxBufferCountLocked方法返回的值，表示
+    // 此BufferQueue可用的最大槽位数,一般而言等于最大可出队数与最大可入队数之和,
+    // 与mMaxBufferCount之间的最小值
     int delta = mCore->getMaxBufferCountLocked(mCore->mAsyncMode,
             mDequeueTimeout < 0 ?
             mCore->mConsumerControlledByApp && producerControlledByApp : false,

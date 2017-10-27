@@ -424,7 +424,7 @@ private:
     // mConsumerRunningBehind whether the consumer is running more than
     // one buffer behind the producer.
     //
-    // 是否消耗者正在运行的，且落后于生产者的buffer对象个数大于1
+    // 消耗者是否正在生产者后面运行，大于１个的buffer对象
     mutable bool mConsumerRunningBehind;
 
     // mMutex is the mutex used to prevent concurrent access to the member

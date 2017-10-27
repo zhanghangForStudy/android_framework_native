@@ -506,6 +506,10 @@ public:
         // outTransformHint - filled with default transform applied to the buffer
         // outNumPendingBuffers - num buffers queued that haven't yet been acquired
         //                        (counting the currently queued buffer)
+        // outWidth　－　应用到此缓冲区上的默认填充宽度；
+        // outHeight － 应用到此缓冲区上的默认填充高度；
+        // outTransformHint －　应用到此缓冲区之上的默认填充转换
+        // outNumPendingBuffers　－　当前并没有获取的，已经入队的缓冲区数
         inline void deflate(uint32_t* outWidth,
                 uint32_t* outHeight,
                 uint32_t* outTransformHint,
