@@ -187,7 +187,7 @@ private:
     // member variable is accessed.
     //
     // mMutex是一个互斥量，它被用来并发访问BufferQueueCore对象的成员变量。
-    // 任何成员变量无论合适，在被访问的时候，都需要锁住此互斥量
+    // 任何成员变量无论何时，在被访问的时候，都需要锁住此互斥量
     mutable Mutex mMutex;
 
     // mIsAbandoned indicates that the BufferQueue will no longer be used to
