@@ -29,6 +29,7 @@
 using namespace android;
 
 int main(int, char**) {
+    // 当对端(客户端/服务端)的socket关闭时,防止进程退出。
     signal(SIGPIPE, SIG_IGN);
     // When SF is launched in its own process, limit the number of
     // binder threads to 4.
